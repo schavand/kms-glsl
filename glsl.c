@@ -31,6 +31,9 @@
 #include "common.h"
 #include "drm-common.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;

@@ -1,0 +1,22 @@
+{
+    // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+    // Pointez pour afficher la description des attributs existants.
+    // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [       
+        {
+            "type": "by-gdb",
+            "request": "launch",
+            "name": "Launch(gdb remote)",
+            "program": "${fileBasenameNoExtension}",
+            "programArgs": "examples/duality2.glsl",
+            "cwd": "${workspaceRoot}",
+            "remote": { 
+                "enabled": true,
+                "address": "192.168.20.10:2345",
+                "mode": "extended-remote",
+                "execfile": "${fileBasenameNoExtension}"
+            }
+        }
+    ]
+}
