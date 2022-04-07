@@ -57,6 +57,7 @@ static const char *shadertoy_fs_tmpl =
 		"uniform float     iSampleRate;           // sound sample rate (i.e., 44100)          \n"
 		"uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)           \n"
 		"uniform float     iChannelTime[4];       // channel playback time (in sec)           \n"
+		"uniform sampler2D maTexture;                                                         \n"
 		"                                                                                     \n"
 		"%s                                                                                   \n"
 		"                                                                                     \n"
@@ -144,6 +145,7 @@ int init_shadertoy(const struct gbm *gbm, struct egl *egl, const char *file) {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), &vertices[0]);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *) (intptr_t) 0);
 	glEnableVertexAttribArray(0);
+	glUniform1i(glGetUniformLocation(program, "texture1"), 0);
 
 	egl->draw = draw_shadertoy;
 

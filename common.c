@@ -404,7 +404,7 @@ const struct egl * init_egl(const struct gbm *gbm)
 	eglMakeCurrent(egl.display, egl.surface, egl.surface, egl.context);
 
 	gl_exts = (char *) glGetString(GL_EXTENSIONS);
-	printf("OpenGL ES 2.x information:\n");
+	printf("OpenGL ES information:\n");
 	printf("  version: \"%s\"\n", glGetString(GL_VERSION));
 	printf("  shading language version: \"%s\"\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 	printf("  vendor: \"%s\"\n", glGetString(GL_VENDOR));

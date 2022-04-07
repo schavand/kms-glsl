@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch(gdb remote)",
             "program": "${fileBasenameNoExtension}",
-            "programArgs": "examples/duality2.glsl",
+            "programArgs": "-b=examples/letra.jpg examples/blobs.glsl",
             "cwd": "${workspaceRoot}",
             "remote": { 
                 "enabled": true,

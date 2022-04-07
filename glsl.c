@@ -38,7 +38,7 @@ static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;
 
-static const char *shortopts = "Ac:D:f:hm:p:v:x";
+static const char *shortopts = "Ac:D:f:hm:p:v:x:b";
 
 static const struct option longopts[] = {
 		{"atomic",      no_argument,       0, 'A'},
@@ -50,11 +50,12 @@ static const struct option longopts[] = {
 		{"perfcntr",    required_argument, 0, 'p'},
 		{"vmode",       required_argument, 0, 'v'},
 		{"surfaceless", no_argument,       0, 'x'},
+		{"background-image", required_argument,0, 'b'},
 		{0,             0,                 0, 0}
 };
 
 static void usage(const char *name) {
-	printf("Usage: %s [-AcDfmpvx] <shader_file>\n"
+	printf("Usage: %s [-AcDfmpvxb] <shader_file>\n"
 		   "\n"
 		   "options:\n"
 		   "    -A, --atomic             use atomic modesetting and fencing\n"
@@ -68,7 +69,8 @@ static void usage(const char *name) {
 		   "                             separated list)\n"
 		   "    -v, --vmode=VMODE        specify the video mode in the format\n"
 		   "                             <mode>[-<vrefresh>]\n"
-		   "    -x, --surfaceless        use surfaceless mode, instead of GBM surface\n",
+		   "    -x, --surfaceless        use surfaceless mode, instead of GBM surface\n"
+		   "    -b, --background-image=<file>   specify a background image file name  \n",
 		   name);
 }
 
@@ -76,6 +78,7 @@ int main(int argc, char *argv[]) {
 	const char *device = NULL;
 	const char *shadertoy = NULL;
 	const char *perfcntr = NULL;
+	const char *background = NULL;
 	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
 	char *p;
 	uint32_t format = DRM_FORMAT_XRGB8888;
@@ -139,6 +142,9 @@ int main(int argc, char *argv[]) {
 			case 'x':
 				surfaceless = true;
 				break;
+			case 'b':
+				background = optarg;
+				break;
 			default:
 				usage(argv[0]);
 				return -1;
@@ -181,6 +187,35 @@ int main(int argc, char *argv[]) {
 
 	if (perfcntr) {
 		init_perfcntrs(egl, perfcntr);
+	}
+
+
+	if (background)
+	{
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(true);
+		unsigned char *data = stbi_load(background, &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			unsigned int texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			// définit les options de la texture actuellement liée
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    		glGenerateMipmap(GL_TEXTURE_2D);
+
+			stbi_image_free(data);
+		}
+		else
+		{
+			printf("%s :Failed to load background image\n",argv[0]);
+			return -1;
+		}
 	}
 
 	glClearColor(0.5, 0.5, 0.5, 1.0);
