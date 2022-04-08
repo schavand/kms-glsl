@@ -5,6 +5,9 @@
 
 #define time iTime
 
+uniform sampler2D maTexture; 
+
+
 float makePoint(float x,float y,float fx,float fy,float sx,float sy,float t){
    float xx=x+sin(t*fx)*sx;
    float yy=y+cos(t*fy)*sy;
@@ -54,10 +57,17 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
    c=c+makePoint(x,y,0.2,0.6,0.6,0.3,time);
    c=c+makePoint(x,y,1.3,0.5,0.5,0.4,time);
    
-   vec3 d=vec3(a,b,c)/32.0;
+   vec3 d=vec3(a,b,c)/16.0;
    
    vec2 uv = fragCoord.xy / iResolution.xy;
+    
+  // float sin_factor = sin(iTime);
+  // float cos_factor = cos(iTime);
+  // uv = (uv - 0.5) * mat2(cos_factor, sin_factor, -sin_factor, cos_factor) + 0.5;
+
  
    fragColor = mix(texture2D(maTexture,uv),vec4(d.x,d.y,d.z,(d.x+d.y+d.z)/3.0),0.5);
+  
+ //  fragColor = texture2D(maTexture,uv);
 }
 

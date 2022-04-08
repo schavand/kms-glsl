@@ -48,6 +48,7 @@ static const char *shadertoy_vs =
 		"}                                       \n";
 
 static const char *shadertoy_fs_tmpl =
+//		"#version 310 es                                                                      \n"
 		"precision mediump float;                                                             \n"
 		"uniform vec3      iResolution;           // viewport resolution (in pixels)          \n"
 		"uniform float     iTime;                 // shader playback time (in seconds)        \n"
@@ -57,7 +58,6 @@ static const char *shadertoy_fs_tmpl =
 		"uniform float     iSampleRate;           // sound sample rate (i.e., 44100)          \n"
 		"uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)           \n"
 		"uniform float     iChannelTime[4];       // channel playback time (in sec)           \n"
-		"uniform sampler2D maTexture;                                                         \n"
 		"                                                                                     \n"
 		"%s                                                                                   \n"
 		"                                                                                     \n"
@@ -104,6 +104,12 @@ static void draw_shadertoy(uint64_t start_time, unsigned frame) {
 	// glUniform1f(iTime, (float) frame / 60.0f);
 	glUniform1ui(iFrame, frame);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 1);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 2);
+
 	start_perfcntrs();
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -145,7 +151,9 @@ int init_shadertoy(const struct gbm *gbm, struct egl *egl, const char *file) {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), &vertices[0]);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *) (intptr_t) 0);
 	glEnableVertexAttribArray(0);
-	glUniform1i(glGetUniformLocation(program, "texture1"), 0);
+	glUniform1i(glGetUniformLocation(program, "maTexture"), 0);
+
+	glUniform1i(glGetUniformLocation(program, "maVideo"), 1);
 
 	egl->draw = draw_shadertoy;
 

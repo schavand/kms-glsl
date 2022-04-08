@@ -38,7 +38,7 @@ static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;
 
-static const char *shortopts = "Ac:D:f:hm:p:v:x:b";
+static const char *shortopts = "Ac:D:f:hm:p:v:xb:B:";
 
 static const struct option longopts[] = {
 		{"atomic",      no_argument,       0, 'A'},
@@ -51,11 +51,12 @@ static const struct option longopts[] = {
 		{"vmode",       required_argument, 0, 'v'},
 		{"surfaceless", no_argument,       0, 'x'},
 		{"background-image", required_argument,0, 'b'},
+		{"video-image", required_argument,0, 'B'},
 		{0,             0,                 0, 0}
 };
 
 static void usage(const char *name) {
-	printf("Usage: %s [-AcDfmpvxb] <shader_file>\n"
+	printf("Usage: %s [-AcDfmpvxbB] <shader_file>\n"
 		   "\n"
 		   "options:\n"
 		   "    -A, --atomic             use atomic modesetting and fencing\n"
@@ -70,7 +71,8 @@ static void usage(const char *name) {
 		   "    -v, --vmode=VMODE        specify the video mode in the format\n"
 		   "                             <mode>[-<vrefresh>]\n"
 		   "    -x, --surfaceless        use surfaceless mode, instead of GBM surface\n"
-		   "    -b, --background-image=<file>   specify a background image file name  \n",
+		   "    -b, --background-image=<file>   specify a background image file name  \n"
+		   "    -B, --video-image=<file>   specify a video image file name  \n",
 		   name);
 }
 
@@ -79,6 +81,7 @@ int main(int argc, char *argv[]) {
 	const char *shadertoy = NULL;
 	const char *perfcntr = NULL;
 	const char *background = NULL;
+	const char *video = NULL;
 	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
 	char *p;
 	uint32_t format = DRM_FORMAT_XRGB8888;
@@ -145,6 +148,9 @@ int main(int argc, char *argv[]) {
 			case 'b':
 				background = optarg;
 				break;
+			case 'B':
+				video = optarg;
+				break;
 			default:
 				usage(argv[0]);
 				return -1;
@@ -201,8 +207,8 @@ int main(int argc, char *argv[]) {
 			glGenTextures(1, &texture);
 			glBindTexture(GL_TEXTURE_2D, texture);
 			// définit les options de la texture actuellement liée
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -218,7 +224,35 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	glClearColor(0.5, 0.5, 0.5, 1.0);
+	if (video)
+	{
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(true);
+		unsigned char *data = stbi_load(video, &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			unsigned int texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			// définit les options de la texture actuellement liée
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    		glGenerateMipmap(GL_TEXTURE_2D);
+
+			stbi_image_free(data);
+		}
+		else
+		{
+			printf("%s :Failed to load video image\n",argv[0]);
+			return -1;
+		}
+	}
+
+	glClearColor(0., 0., 0., 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	return drm->run(gbm, egl);
