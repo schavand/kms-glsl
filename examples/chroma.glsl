@@ -1,12 +1,14 @@
   precision mediump float;
   
-  uniform sampler2D maTexture;
-  uniform sampler2D maVideo;
- 
-  vec3 keyColor = vec3(0.,1.,0.) ;
+  uniform sampler2D maTexture0;
+  uniform sampler2D maTexture1;
+  uniform sampler2D maTexture2;
+  uniform sampler2D maTexture3; 
+
+  vec3 keyColor = vec3(0.,0.9,0.) ;
   float similarity = 0.4;
-  float smoothness = 0.08;
-  float spill =0.01;
+  float smoothness = 0.04;
+  float spill =0.02;
 
   // From https://github.com/libretro/glsl-shaders/blob/master/nnedi3/shaders/rgb-to-yuv.glsl
   vec2 RGBtoUV(vec3 rgb) {
@@ -17,8 +19,8 @@
   }
 
   vec4 ProcessChromaKey(vec2 texCoord) {
-    vec4 rgba = texture2D(maTexture, texCoord);
-    float chromaDist = distance(RGBtoUV(texture2D(maTexture, texCoord).rgb), RGBtoUV(keyColor));
+    vec4 rgba = texture2D(maTexture0, texCoord);
+    float chromaDist = distance(RGBtoUV(texture2D(maTexture0, texCoord).rgb), RGBtoUV(keyColor));
 
     float baseMask = chromaDist - similarity;
     float fullMask = pow(clamp(baseMask / smoothness, 0., 1.), 1.5);
@@ -34,17 +36,27 @@
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
  
+
    vec2 uv = fragCoord.xy;
-   uv.x=2.0*uv.x/(iResolution.x+iResolution.y);
-   uv.y=2.0*uv.y/(iResolution.x+iResolution.y);
+   uv.x=(1.65*uv.x-700.)/iResolution.x;
+   uv.y=1.0-uv.y/iResolution.y;
 
     
-   float sin_factor = sin(iTime);
-   float cos_factor = cos(iTime);
-   uv = (uv - vec2(iResolution.x/(iResolution.x+iResolution.y),iResolution.y/(iResolution.x+iResolution.y))) * mat2(cos_factor, sin_factor, -sin_factor, cos_factor) + vec2(iResolution.x/(iResolution.x+iResolution.y),iResolution.y/(iResolution.x+iResolution.y));
+   //float sin_factor = sin(iTime);
+   //float cos_factor = cos(iTime);
+   //uv = (uv - vec2(iResolution.x/(iResolution.x+iResolution.y),iResolution.y/(iResolution.x+iResolution.y))) * mat2(cos_factor, sin_factor, -sin_factor, cos_factor) + vec2(iResolution.x/(iResolution.x+iResolution.y),iResolution.y/(iResolution.x+iResolution.y));
 
+    vec3 yuv;                                           
+    yuv.x = texture2D(maTexture1, uv).r;             
+    yuv.y = texture2D(maTexture2, uv).r - 0.5f;      
+    yuv.z = texture2D(maTexture3, uv).r - 0.5f;      
+    mat3 trans = mat3(1, 1 ,1,                          
+                      0, -0.34414, 1.772,               
+                      1.402, -0.71414, 0                
+                      );                                
 
     vec4 testColor = ProcessChromaKey(fragCoord.xy/iResolution.xy);
-    fragColor = mix(testColor,texture2D(maVideo,uv),1.0-testColor.a );
-    //fragColor = texture2D(maTexture,fragCoord.xy/iResolution.xy);
-  }
+    fragColor = mix(testColor,vec4(trans*yuv,1.0),1.0-testColor.a );
+    //fragColor = mix(testColor,texture2D(maTexture1,uv),1.0-testColor.a );
+    //fragColor = texture2D(maTexture0,fragCoord.xy/iResolution.xy);
+   }

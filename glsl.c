@@ -31,6 +31,8 @@
 #include "common.h"
 #include "drm-common.h"
 
+#include "decode.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -38,7 +40,7 @@ static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;
 
-static const char *shortopts = "Ac:D:f:hm:p:v:xb:B:";
+static const char *shortopts = "Ac:D:f:hm:p:v:xb:B:g:";
 
 static const struct option longopts[] = {
 		{"atomic",      no_argument,       0, 'A'},
@@ -51,12 +53,13 @@ static const struct option longopts[] = {
 		{"vmode",       required_argument, 0, 'v'},
 		{"surfaceless", no_argument,       0, 'x'},
 		{"background-image", required_argument,0, 'b'},
-		{"video-image", required_argument,0, 'B'},
+		{"background-video", required_argument,0, 'B'},
+		{"chromakey-image",required_argument,0,'g'},
 		{0,             0,                 0, 0}
 };
 
 static void usage(const char *name) {
-	printf("Usage: %s [-AcDfmpvxbB] <shader_file>\n"
+	printf("Usage: %s [-AcDfmpvxbBg] <shader_file>\n"
 		   "\n"
 		   "options:\n"
 		   "    -A, --atomic             use atomic modesetting and fencing\n"
@@ -72,7 +75,8 @@ static void usage(const char *name) {
 		   "                             <mode>[-<vrefresh>]\n"
 		   "    -x, --surfaceless        use surfaceless mode, instead of GBM surface\n"
 		   "    -b, --background-image=<file>   specify a background image file name  \n"
-		   "    -B, --video-image=<file>   specify a video image file name  \n",
+		   "    -B, --background-video=<file>   specify a video file name  \n"
+		   "    -g, --chromakey-image=<file>    specify a green scren image file name \n",
 		   name);
 }
 
@@ -82,6 +86,7 @@ int main(int argc, char *argv[]) {
 	const char *perfcntr = NULL;
 	const char *background = NULL;
 	const char *video = NULL;
+	const char *chroma = NULL;
 	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
 	char *p;
 	uint32_t format = DRM_FORMAT_XRGB8888;
@@ -93,6 +98,8 @@ int main(int argc, char *argv[]) {
 	unsigned int count = ~0;
 	bool surfaceless = false;
 	int ret;
+
+
 
 	while ((opt = getopt_long_only(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (opt) {
@@ -151,6 +158,9 @@ int main(int argc, char *argv[]) {
 			case 'B':
 				video = optarg;
 				break;
+			case 'g':
+				chroma = optarg;
+				break;
 			default:
 				usage(argv[0]);
 				return -1;
@@ -196,6 +206,34 @@ int main(int argc, char *argv[]) {
 	}
 
 
+	if (chroma)
+	{
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(true);
+		unsigned char *data = stbi_load(chroma, &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			unsigned int texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			// définit les options de la texture actuellement liée
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    		glGenerateMipmap(GL_TEXTURE_2D);
+
+			stbi_image_free(data);
+		}
+		else
+		{
+			printf("%s :Failed to load chroma key image\n",argv[0]);
+			return -1;
+		}
+	}
+
 	if (background)
 	{
 		int width, height, nrChannels;
@@ -224,34 +262,47 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if (video)
+	if (video && !background)
 	{
-		int width, height, nrChannels;
-		stbi_set_flip_vertically_on_load(true);
-		unsigned char *data = stbi_load(video, &width, &height, &nrChannels, 0);
-		if (data)
+		if (!open_video_to_decode(video))
 		{
-			unsigned int texture;
-			glGenTextures(1, &texture);
-			glBindTexture(GL_TEXTURE_2D, texture);
-			// définit les options de la texture actuellement liée
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			read_file_to_decode();
+				unsigned int texture;
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width, oneFrame->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[0]);
+//    			glGenerateMipmap(GL_TEXTURE_2D);
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width/2, oneFrame->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[1]);
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width/2, oneFrame->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[2]);				
+		
 
-    		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    		glGenerateMipmap(GL_TEXTURE_2D);
-
-			stbi_image_free(data);
 		}
 		else
 		{
-			printf("%s :Failed to load video image\n",argv[0]);
+			printf("%s :Failed to load video\n",argv[0]);
 			return -1;
 		}
 	}
-
+	
 	glClearColor(0., 0., 0., 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 

@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch(gdb remote)",
             "program": "${fileBasenameNoExtension}",
-            "programArgs": "-bexamples/tablet.jpg -Bexamples/letra.jpg examples/chroma.glsl",
+            "programArgs": "-gexamples/tablet.jpg -Bexamples/sample-mpg-file.mpg  examples/chroma.glsl",
             "cwd": "${workspaceRoot}",
             "remote": { 
                 "enabled": true,

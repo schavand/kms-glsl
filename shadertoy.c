@@ -108,7 +108,13 @@ static void draw_shadertoy(uint64_t start_time, unsigned frame) {
 	glBindTexture(GL_TEXTURE_2D, 1);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, 2);
+	glBindTexture(GL_TEXTURE_2D, 2); //Y
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, 3); //U
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, 4); //V
 
 	start_perfcntrs();
 
@@ -151,9 +157,12 @@ int init_shadertoy(const struct gbm *gbm, struct egl *egl, const char *file) {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), &vertices[0]);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *) (intptr_t) 0);
 	glEnableVertexAttribArray(0);
-	glUniform1i(glGetUniformLocation(program, "maTexture"), 0);
+	glUniform1i(glGetUniformLocation(program, "maTexture0"), 0);
 
-	glUniform1i(glGetUniformLocation(program, "maVideo"), 1);
+	glUniform1i(glGetUniformLocation(program, "maTexture1"), 1);
+	glUniform1i(glGetUniformLocation(program, "maTexture2"), 2);
+	glUniform1i(glGetUniformLocation(program, "maTexture3"), 3);
+
 
 	egl->draw = draw_shadertoy;
 

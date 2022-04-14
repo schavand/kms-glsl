@@ -30,6 +30,8 @@
 #include "common.h"
 #include "drm-common.h"
 
+#include "decode.h"
+
 static struct drm drm;
 
 static void page_flip_handler(int fd, unsigned int frame,
@@ -138,6 +140,8 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 			}
 			drmHandleEvent(drm.fd, &evctx);
 		}
+		
+		read_file_to_decode();
 
 		cur_time = get_time_ns();
 		if (cur_time > (report_time + 2 * NSEC_PER_SEC)) {
