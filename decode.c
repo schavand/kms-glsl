@@ -213,7 +213,7 @@ void read_file_to_decode()
     }
     else
     {
-        avformat_seek_file(fmt_ctx, video_stream_idx, 0,0,0,0);
+        avformat_seek_file(fmt_ctx, video_stream_idx, 0,0,0,AVSEEK_FLAG_BYTE);
     }
 }
 
