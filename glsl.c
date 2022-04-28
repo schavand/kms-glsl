@@ -36,11 +36,15 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "libcamera_wrap.h" 
+
+libcameraAppHandle libcamera=NULL;
+
 static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;
 
-static const char *shortopts = "Ac:D:f:hm:p:v:xb:B:g:";
+static const char *shortopts = "Ac:D:f:hm:p:v:xb:B:g:G";
 
 static const struct option longopts[] = {
 		{"atomic",      no_argument,       0, 'A'},
@@ -55,11 +59,12 @@ static const struct option longopts[] = {
 		{"background-image", required_argument,0, 'b'},
 		{"background-video", required_argument,0, 'B'},
 		{"chromakey-image",required_argument,0,'g'},
+		{"chromakey-camera",no_argument,0,'G'},
 		{0,             0,                 0, 0}
 };
 
 static void usage(const char *name) {
-	printf("Usage: %s [-AcDfmpvxbBg] <shader_file>\n"
+	printf("Usage: %s [-AcDfmpvxbBgG] <shader_file>\n"
 		   "\n"
 		   "options:\n"
 		   "    -A, --atomic             use atomic modesetting and fencing\n"
@@ -76,7 +81,8 @@ static void usage(const char *name) {
 		   "    -x, --surfaceless        use surfaceless mode, instead of GBM surface\n"
 		   "    -b, --background-image=<file>   specify a background image file name  \n"
 		   "    -B, --background-video=<file>   specify a video file name  \n"
-		   "    -g, --chromakey-image=<file>    specify a green scren image file name \n",
+		   "    -g, --chromakey-image=<file>    specify a green screen image file name \n"
+			"    -G, --chromakey-camera  use libcamera as green screen video source \n",
 		   name);
 }
 
@@ -87,6 +93,7 @@ int main(int argc, char *argv[]) {
 	const char *background = NULL;
 	const char *video = NULL;
 	const char *chroma = NULL;
+	bool bcamera = false;
 	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
 	char *p;
 	uint32_t format = DRM_FORMAT_XRGB8888;
@@ -160,6 +167,9 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'g':
 				chroma = optarg;
+				break;
+			case 'G':
+				bcamera = true;
 				break;
 			default:
 				usage(argv[0]);
@@ -303,6 +313,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	if (bcamera)
+		libcamera = createLibcameraApp();
+
 	glClearColor(0., 0., 0., 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 

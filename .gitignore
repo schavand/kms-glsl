@@ -1,2 +1,6 @@
 *.o
 glsl
+examples/bunny.kmv
+examples/bunny.mp4
+examples/sample-30s.mp4
+examples/bunny.mkv

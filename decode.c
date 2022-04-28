@@ -207,13 +207,16 @@ void read_file_to_decode()
         // check if the packet belongs to a stream we are interested in, otherwise
         // skip it
         if (pkt->stream_index == video_stream_idx)
+        {
             ret = decode_packet(video_dec_ctx, pkt);
-        
+
+        }
         av_packet_unref(pkt);
     }
     else
     {
-        avformat_seek_file(fmt_ctx, video_stream_idx, 0,0,0,AVSEEK_FLAG_BYTE);
+        avformat_seek_file(fmt_ctx, video_stream_idx, 0,0,0,AVSEEK_FLAG_BYTE|AVSEEK_FLAG_ANY);
+        avformat_seek_file(fmt_ctx, video_stream_idx, 0,0,0,AVSEEK_FLAG_ANY|AVSEEK_FLAG_FRAME);
     }
 }
 
