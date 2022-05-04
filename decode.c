@@ -202,6 +202,9 @@ int open_video_to_decode(const char *filename)
 
 void read_file_to_decode()
 {
+    if (fmt_ctx == NULL)
+        return;
+
     /* read frames from the file */
     if (av_read_frame(fmt_ctx, pkt) >= 0) {
         // check if the packet belongs to a stream we are interested in, otherwise

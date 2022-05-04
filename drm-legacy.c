@@ -32,6 +32,9 @@
 
 #include "decode.h"
 
+#include "libcamera_wrap.h" 
+extern libcameraAppHandle *libcamera;
+
 static struct drm drm;
 
 static void page_flip_handler(int fd, unsigned int frame,
@@ -56,6 +59,7 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 	uint32_t i = 0;
 	uint64_t start_time, report_time, cur_time;
 	int ret;
+	libcameraAppMsg *msg;
 
 	if (gbm->surface) {
 		eglSwapBuffers(egl->display, egl->surface);
@@ -78,6 +82,11 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 	}
 
 	start_time = report_time = get_time_ns();
+
+	if (libcamera)
+	{
+		msg = createAppMsg();
+	}
 
 	while (i < drm.count) {
 		unsigned frame = i;
@@ -142,6 +151,38 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		}
 		
 		read_file_to_decode();
+
+		if (libcamera)
+		{	
+			libcameraWait(libcamera,msg);
+			if (getLibcameraMessageType(msg) == Quit)
+				return 0;
+
+			if (getLibcameraMessageType(msg) != RequestComplete)
+				exit(EXIT_FAILURE);
+
+			libcameraStreamInfo *stinfo = createStreamInfo();	
+			libcameraStream *stream = getViewfinderStream(libcamera, stinfo);
+
+			uint8_t *f = getFrame(libcamera, msg, stream);
+
+			unsigned int width = getStreamInfoWidth(stinfo);
+			unsigned int height = getStreamInfoHeight(stinfo);
+			unsigned int stride = getStreamInfoStride(stinfo);
+			//const uint8_t *Y = getFrame(libcamera, msg, stream);
+			//const uint8_t *U = Y + (uint32_t)width * height;
+			//const uint8_t *V = U + ((uint32_t)width / 2) * (height/2);
+
+
+			glBindTexture(GL_TEXTURE_2D, 2);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, stride, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, f);
+			glBindTexture(GL_TEXTURE_2D, 3);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, stride/2,height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, &f[stride*height]);
+    		glBindTexture(GL_TEXTURE_2D, 4);
+   			glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, stride/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, &f[stride*height+stride/2*height/2]);	
+
+			//ShowPreview(libcamera, getCompletedRequestPtr(msg), getViewfinderStream(libcamera,NULL));
+		};
 
 		cur_time = get_time_ns();
 		if (cur_time > (report_time + 2 * NSEC_PER_SEC)) {

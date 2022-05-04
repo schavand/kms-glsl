@@ -38,7 +38,8 @@
 
 #include "libcamera_wrap.h" 
 
-libcameraAppHandle libcamera=NULL;
+libcameraAppHandle *libcamera=NULL;
+libcameraOptions *Options=NULL;
 
 static const struct egl *egl;
 static const struct gbm *gbm;
@@ -313,11 +314,59 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	if (bcamera)
+	if (bcamera && !video)
+	{
+				unsigned int texture;
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width, oneFrame->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[0]);
+//    			glGenerateMipmap(GL_TEXTURE_2D);
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width/2, oneFrame->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[1]);
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
+				// définit les options de la texture actuellement liée
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);   
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	    		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, oneFrame->width/2, oneFrame->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, oneFrame->data[2]);	
 		libcamera = createLibcameraApp();
+		Options = GetOptions(libcamera);
+		ParseOptions(Options, 0,NULL);
+
+		float v;
+		v=1.1;
+		optionSetValue(Options, awb_gain_r, &v);
+		v=1.1;
+		optionSetValue(Options, awb_gain_b, &v);
+		OpenCamera(libcamera);
+		ConfigureViewfinder(libcamera);
+		StartCamera(libcamera);
+	}
 
 	glClearColor(0., 0., 0., 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	return drm->run(gbm, egl);
+	ret = drm->run(gbm, egl);
+
+	if (libcamera)
+	{
+		freeLibcameraApp(libcamera);
+		StopCamera(libcamera);
+		Teardown(libcamera);
+		CloseCamera(libcamera);
+	}
+	return ret;
 }
