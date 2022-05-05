@@ -1,5 +1,17 @@
 # KMS GLSL
 
+This is a fork from KMS GLSL originally found from [Antonin Stefanutti work](https://github.com/astefanutti/kms-glsl). 
+Initially, the idea was to create a photobooth with Greenscreen/Chromakeying feature (see examples/chroma.glsl and chroma2.glsl) :
+
+```shell
+$ ./glsl -Bexamples/h264.h264 -gexamples/tablet.jpg examples/chroma.glsl
+```
+or with a camera and some green screen device :
+
+```shell
+$ ./glsl -G -gexamples/letra.jpg examples/chroma2.glsl
+```
+
 KMS GLSL is a command line tool that runs OpenGL fragment shaders, using the [DRM/KMS Linux kernel subsystem](https://en.wikipedia.org/wiki/Direct_Rendering_Manager).
 It runs shaders fullscreen, and does not need any windowing system, like X or Wayland.
 
@@ -26,7 +38,7 @@ $ make
 
 ```console
 $ ./glsl -h
-Usage: ./glsl [-AcDfmpvx] <shader_file>
+Usage: ./glsl [-AcDfmpvxbBgG] <shader_file>
 
 options:
     -A, --atomic             use atomic modesetting and fencing
@@ -41,6 +53,11 @@ options:
     -v, --vmode=VMODE        specify the video mode in the format
                              <mode>[-<vrefresh>]
     -x, --surfaceless        use surfaceless mode, instead of GBM surface
+    -b, --background-image=<file>   specify a background image file name 
+    -B, --background-video=<file>   specify a video file name
+    -g, --chromakey-image=<file>    specify a green screen image file name
+    -G, --chromakey-camera  use libcamera as green screen video source 
+
 ```
 
 > :warning: [Image shaders](https://www.shadertoy.com/howto#q1) from [Shadertoy](https://www.shadertoy.com/) are currently expected as input shader files.
